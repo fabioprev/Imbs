@@ -460,9 +460,9 @@ void BackgroundSubtractorIMBS::initialize(Size frameSize, int frameType)
 {
 	if (loadedBg)
 		return;
-	cout << "INPUT: WIDTH " << frameSize.width << "  HEIGHT " << frameSize.height <<
-			"  FPS " << fps << endl;
-	cout << endl;
+	//cout << "INPUT: WIDTH " << frameSize.width << "  HEIGHT " << frameSize.height <<
+	//		"  FPS " << fps << endl;
+	//cout << endl;
 
 	this->frameSize = frameSize;
 	this->frameType = frameType;
@@ -720,7 +720,7 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 							associationThreshold));
 
 	if(bg_sample_number == (numSamples - 1)) {
-    std::cout << "new bg created" << std::endl;
+    //std::cout << "new bg created" << std::endl;
     persistenceImage = Scalar(0);
 
     bg_reset = false;
@@ -960,7 +960,7 @@ void BackgroundSubtractorIMBS::filterFg() {
 
 void BackgroundSubtractorIMBS::changeBg() {
 
-	std::cout << "WARNING: changeBg" << std::endl;
+	//std::cout << "WARNING: changeBg" << std::endl;
 
 	//samplingPeriod /= 2.;
 	//numSamples /= 2.;
@@ -1016,13 +1016,13 @@ bool BackgroundSubtractorIMBS::loadBg(const char* filename) {
 		isBackgroundCreated = true;
 		
 		//initialization step
-		cout << endl;
-		cout << "LOADED BG" << endl;
-		cout << endl;
+		//cout << endl;
+		//cout << "LOADED BG" << endl;
+		//cout << endl;
 		
 		//get frame size and frame type
 		getline(file, line);
-		cout << line << endl;
+		//cout << line << endl;
 		
 		int index = line.find_first_of(" ");
 		string widthString = line.substr(0, index);
@@ -1036,16 +1036,16 @@ bool BackgroundSubtractorIMBS::loadBg(const char* filename) {
 		istringstream ss_h(heightString);
 		ss_h >> height;
 		
-		cout << "width " << width << "   height " << height << endl;
+		//cout << "width " << width << "   height " << height << endl;
 		
 		Size frameSize(width, height);
 		getline(file, line);
-		cout << line << endl;
+		//cout << line << endl;
 		int frameType = 0;
 		
-		cout << "INPUT: WIDTH " << frameSize.width << "  HEIGHT " << frameSize.height <<
-			"  FPS " << fps << endl;
-		cout << endl;
+		//cout << "INPUT: WIDTH " << frameSize.width << "  HEIGHT " << frameSize.height <<
+		//	"  FPS " << fps << endl;
+		//cout << endl;
 
 		this->frameSize = frameSize;
 		this->frameType = frameType;

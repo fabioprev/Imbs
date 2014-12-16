@@ -1,3 +1,7 @@
+# Compilation folder
+build
+lib
+
 # Compiled Object files
 *.slo
 *.lo

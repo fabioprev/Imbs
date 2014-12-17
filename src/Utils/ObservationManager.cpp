@@ -113,17 +113,17 @@ VisualReading ObservationManager::process(Mat frame, Mat fgMask)
 	VisualReading visualReading;
 	vector<Rect> boundingBoxes;
 	
-	/// Kinect (People)
-	//int minArea = 1000;
-	//int maxArea = 20000;
+	/// Kinect (InSpace)
+	int minArea = 800;
+	int maxArea = 20000;
 	
 	/// PETS-2009
 	//int minArea = 370;
 	//int maxArea = 10000;
 	
 	/// Edinburgh-Atrium
-	int minArea = 0;
-	int maxArea = 5000;
+	//int minArea = 0;
+	//int maxArea = 5000;
 	
 	/// Soccer
 	//int minArea = 150;

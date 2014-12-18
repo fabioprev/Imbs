@@ -20,3 +20,4 @@ foreach (file ${files})
 endforeach(file)
 
 execute_process(COMMAND rm -rf @CMAKE_INSTALL_PREFIX@/Imbs RESULT_VARIABLE rm_retval OUTPUT_VARIABLE rm_out)
+execute_process(COMMAND rm -rf @CMAKE_INSTALL_PREFIX@/../lib/Imbs RESULT_VARIABLE rm_retval OUTPUT_VARIABLE rm_out)

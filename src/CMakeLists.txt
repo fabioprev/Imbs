@@ -86,6 +86,31 @@ file(GLOB_RECURSE Imbs_src "CameraModel/*.cpp" "Core/*.cpp" Utils/*.cpp)
 add_library(imbs SHARED ${Imbs_src} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(imbs ${OpenCV_LIBS})
 
+file(READ "$ENV{HOME}/.profile" contents)
+
+# Convert file contents into a CMake list (where each element in the list is one line of the file)
+string(REGEX REPLACE ";" "\\\\;" contents "${contents}")
+string(REGEX REPLACE "\n" ";" contents "${contents}")
+
+set(found false)
+
+# Checking whether the environment variable has already been set.
+foreach (line ${contents})
+	string(REGEX MATCH "export Imbs_ROOT=${PROJECT_ROOT}" result "${line}")
+	
+	if ("${result}" STREQUAL "export Imbs_ROOT=${PROJECT_ROOT}")
+		set(found true)
+	endif ("${result}" STREQUAL "export Imbs_ROOT=${PROJECT_ROOT}")
+endforeach(line)
+
+if (NOT found)
+	# Setting the environment variable.
+	file(APPEND $ENV{HOME}/.profile "\nexport Imbs_ROOT=${PROJECT_ROOT}")
+	
+	# Adding the path of the Imbs library
+	file(APPEND $ENV{HOME}/.bashrc "\nexport LD_LIBRARY_PATH=/usr/local/lib/Imbs:\${LD_LIBRARY_PATH}")
+endif (NOT found)
+
 set(CMAKE_INSTALL_PREFIX /usr/local/include)
 
 # Headers
@@ -94,7 +119,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../src/Core DESTINATION Imbs FILES
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../src/Utils DESTINATION Imbs FILES_MATCHING PATTERN "*.h*")
 
 # Shared object
-install(TARGETS imbs LIBRARY DESTINATION ../lib)
+install(TARGETS imbs LIBRARY DESTINATION ../lib/Imbs)
 
 # Make uninstall
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)

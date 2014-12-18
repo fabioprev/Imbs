@@ -94,7 +94,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../src/Core DESTINATION Imbs FILES
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../src/Utils DESTINATION Imbs FILES_MATCHING PATTERN "*.h*")
 
 # Shared object
-install(TARGETS imbs LIBRARY DESTINATION ../lib/Imbs)
+install(TARGETS imbs LIBRARY DESTINATION ../lib)
 
 # Make uninstall
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)

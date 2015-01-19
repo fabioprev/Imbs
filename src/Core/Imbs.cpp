@@ -25,7 +25,7 @@ using namespace std;
 using namespace cv;
 
 // default parameters of IMBS algorithm
-static const double defaultFps = 25.0;
+static const float defaultFps = 25.0;
 static const unsigned char defaultFgThreshold = 15;
 static const unsigned char defaultAssociationThreshold = 5;
 static const unsigned int defaultSamplingPeriod = 500;
@@ -53,8 +53,8 @@ private:
   unsigned char PERSISTENCE_LABEL;
   const unsigned char FOREGROUND_LABEL;
 
-  double timestamp;
-  double prev_timestamp;
+  float timestamp;
+  float prev_timestamp;
   unsigned int persistencePeriod;
 
 public:
@@ -63,7 +63,7 @@ public:
 				BackgroundSubtractorIMBS::BgModel* bufferToProcess,
 				const int _maxBgBins, const int _fgThreshold,
 				const unsigned char _PERSISTENCE_LABEL, const unsigned char _FOREGROUND_LABEL,
-				const double _timestamp, const double _prev_timestamp, const unsigned int _persistencePeriod)
+				const float _timestamp, const float _prev_timestamp, const unsigned int _persistencePeriod)
     : fgmask(_fgmask), bgModel(bufferToProcess), maxBgBins(_maxBgBins), frameB(_frameB), frameG(_frameG), frameR(_frameR), fgThreshold(_fgThreshold),
 	  persistenceMap(_persistenceMap), PERSISTENCE_LABEL(_PERSISTENCE_LABEL), FOREGROUND_LABEL(_FOREGROUND_LABEL),
 	timestamp(_timestamp), prev_timestamp(_prev_timestamp), persistencePeriod(_persistencePeriod) {}
@@ -367,11 +367,11 @@ BackgroundSubtractorIMBS::BackgroundSubtractorIMBS() :
   persistencePeriod = defaultPersistencePeriod;
   morphologicalFiltering = defaultMorphologicalFiltering;
 
-  initial_tick_count = (double)getTickCount();
+  initial_tick_count = (float)getTickCount();
 
 }
 
-BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(double fps) :
+BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(float fps) :
   numPixels(0),
   loadedBg(false),
   bgBins(NULL),
@@ -393,12 +393,12 @@ BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(double fps) :
   persistencePeriod = defaultPersistencePeriod;
   morphologicalFiltering = defaultMorphologicalFiltering;
 
-  initial_tick_count = (double)getTickCount();
+  initial_tick_count = (float)getTickCount();
 
 }
 
 BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(
-    double fps,
+    float fps,
     unsigned char fgThreshold,
     unsigned char associationThreshold,
     unsigned int samplingPeriod,
@@ -441,7 +441,7 @@ BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(
   this->minArea = minArea;
 
   if (fps == 0.) {
-    initial_tick_count = (double)getTickCount();
+    initial_tick_count = (float)getTickCount();
   } else {
     initial_tick_count = 0;
   }
@@ -555,7 +555,7 @@ void BackgroundSubtractorIMBS::rgbSuppression() {
     }//numPixels
 }
 
-void BackgroundSubtractorIMBS::apply(InputArray _frame, OutputArray _fgmask, double learningRate)
+void BackgroundSubtractorIMBS::apply(InputArray _frame, OutputArray _fgmask, float learningRate)
 {
     frame = _frame.getMat();
 
@@ -647,8 +647,8 @@ void BackgroundSubtractorIMBS::updateBg() {
 ///
 }
 
-double BackgroundSubtractorIMBS::getTimestamp() {
-	return ((double)getTickCount() - initial_tick_count)*1000./getTickFrequency();
+float BackgroundSubtractorIMBS::getTimestamp() {
+	return ((float)getTickCount() - initial_tick_count)*1000./getTickFrequency();
 }
 
 void BackgroundSubtractorIMBS::hsvSuppression() {
@@ -757,7 +757,7 @@ void BackgroundSubtractorIMBS::getFg() {
 
 void BackgroundSubtractorIMBS::areaThresholding()
 {
-	double maxArea = 0.6 * numPixels;
+	float maxArea = 0.6 * numPixels;
 	
 	std::vector < std::vector<Point> > contours;
     Mat tmpBinaryImage = fgfiltered.clone();
@@ -768,7 +768,7 @@ void BackgroundSubtractorIMBS::areaThresholding()
 	for (size_t contourIdx = 0; contourIdx < contours.size(); ++contourIdx)
     {
 		Moments moms = moments(Mat(contours[contourIdx]));
-		double area = moms.m00;
+		float area = moms.m00;
         if (area < minArea || area >= maxArea)
             continue;
 		else {

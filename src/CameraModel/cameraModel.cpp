@@ -26,12 +26,12 @@ CameraModel::~CameraModel()
 
 void CameraModel::internalInit()
 {
-	double sa;
-	double ca;
-	double sb;
-	double cb;
-	double sg;
-	double cg;
+	float sa;
+	float ca;
+	float sb;
+	float cb;
+	float sg;
+	float cg;
 	
 	// compute matrix ...
 	sa = sin(mRx);
@@ -59,7 +59,7 @@ void CameraModel::internalInit()
 	isInit = true;
 }
 
-void CameraModel::setGeometry(int width, int height, double ncx, double nfx, double dx, double dy, double dpx, double dpy)
+void CameraModel::setGeometry(int width, int height, float ncx, float nfx, float dx, float dy, float dpx, float dpy)
 {
 	mImgWidth = width;
 	mImgHeight = height;
@@ -73,7 +73,7 @@ void CameraModel::setGeometry(int width, int height, double ncx, double nfx, dou
 	isInit = false;
 }
 
-void CameraModel::setIntrinsic(double focal, double kappa1, double cx, double cy, double sx)
+void CameraModel::setIntrinsic(float focal, float kappa1, float cx, float cy, float sx)
 {
 	mFocal = focal;
 	mKappa1 = kappa1;
@@ -84,7 +84,7 @@ void CameraModel::setIntrinsic(double focal, double kappa1, double cx, double cy
 	isInit = false;
 }
 	  
-void CameraModel::setExtrinsic(double tx, double ty, double tz, double rx, double ry, double rz)
+void CameraModel::setExtrinsic(float tx, float ty, float tz, float rx, float ry, float rz)
 {
 	mTx = tx;
 	mTy = ty;
@@ -300,14 +300,14 @@ bool CameraModel::fromDat(std::istream& is, int width, int height)
     
 }
 
-bool CameraModel::imageToWorld(double Xi, double Yi, double Zw, double& Xw, double& Yw)
+bool CameraModel::imageToWorld(float Xi, float Yi, float Zw, float& Xw, float& Yw)
 {
 	bool done;
-	double Xd;
-	double Yd;
-	double Xu;
-	double Yu;
-	double common_denominator;
+	float Xd;
+	float Yd;
+	float Xu;
+	float Yu;
+	float common_denominator;
 	
 	if (isInit)
 	{
@@ -344,9 +344,9 @@ bool CameraModel::imageToWorld(double Xi, double Yi, double Zw, double& Xw, doub
 	return done;
 }
 
-void CameraModel::distortedToUndistortedSensorCoord (double Xd, double Yd, double& Xu, double& Yu)
+void CameraModel::distortedToUndistortedSensorCoord (float Xd, float Yd, float& Xu, float& Yu)
 {
-	double    distortion_factor;
+	float    distortion_factor;
 	
 	/* convert from distorted to undistorted sensor plane coordinates */
 	distortion_factor = 1 + mKappa1 * (Xd*Xd + Yd*Yd);
@@ -354,16 +354,16 @@ void CameraModel::distortedToUndistortedSensorCoord (double Xd, double Yd, doubl
 	Yu = Yd * distortion_factor;
 }
 
-bool CameraModel::worldToImage(double Xw, double Yw, double Zw, double& Xi, double& Yi)
+bool CameraModel::worldToImage(float Xw, float Yw, float Zw, float& Xi, float& Yi)
 {
 	bool done = false;
-	double xc;
-	double yc;
-	double zc;
-	double Xu;
-	double Yu;
-	double Xd;
-	double Yd;
+	float xc;
+	float yc;
+	float zc;
+	float Xu;
+	float Yu;
+	float Xd;
+	float Yd;
 	
 	//if (isInit)
 	{
@@ -388,20 +388,20 @@ bool CameraModel::worldToImage(double Xw, double Yw, double Zw, double& Xi, doub
 	return done;
 }
 
-void CameraModel::undistortedToDistortedSensorCoord (double Xu, double Yu, double& Xd, double& Yd)
+void CameraModel::undistortedToDistortedSensorCoord (float Xu, float Yu, float& Xd, float& Yd)
 {
-	double Ru;
-	double Rd;
-	double lambda;
-	double c;
-	double d;
-	double Q;
-	double R;
-	double D;
-	double S;
-	double T;
-	double sinT;
-	double cosT;
+	float Ru;
+	float Rd;
+	float lambda;
+	float c;
+	float d;
+	float Q;
+	float R;
+	float D;
+	float S;
+	float T;
+	float sinT;
+	float cosT;
 	
 	if (((Xu == 0) && (Yu == 0)) || (mKappa1 == 0))
 	{
@@ -474,13 +474,13 @@ void CameraModel::undistortedToDistortedSensorCoord (double Xu, double Yu, doubl
 	}
 }
 
-bool CameraModel::undistortedToDistortedImageCoord (double Xfu, double Yfu, double& Xfd, double& Yfd)
+bool CameraModel::undistortedToDistortedImageCoord (float Xfu, float Yfu, float& Xfd, float& Yfd)
 {
 	bool done = false;
-	double Xu;
-	double Yu;
-	double Xd;
-	double Yd;
+	float Xu;
+	float Yu;
+	float Xd;
+	float Yd;
 	
 	if (isInit)
 	{
@@ -500,13 +500,13 @@ bool CameraModel::undistortedToDistortedImageCoord (double Xfu, double Yfu, doub
 	return done;
 }
 
-bool CameraModel::distortedToUndistortedImageCoord (double Xfd, double Yfd, double& Xfu, double& Yfu)
+bool CameraModel::distortedToUndistortedImageCoord (float Xfd, float Yfd, float& Xfu, float& Yfu)
 {
 	bool done = false;
-	double Xd;
-	double Yd;
-	double Xu;
-	double Yu;
+	float Xd;
+	float Yd;
+	float Xu;
+	float Yu;
 	
 	if (isInit)
 	{
@@ -526,7 +526,7 @@ bool CameraModel::distortedToUndistortedImageCoord (double Xfd, double Yfd, doub
 	return done;
 }
 
-bool CameraModel::worldToCameraCoord (double xw, double yw, double zw, double& xc, double& yc, double& zc)
+bool CameraModel::worldToCameraCoord (float xw, float yw, float zw, float& xc, float& yc, float& zc)
 {
 	bool done = false;
 	
@@ -541,10 +541,10 @@ bool CameraModel::worldToCameraCoord (double xw, double yw, double zw, double& x
 	return done;
 }
 
-bool CameraModel::cameraToWorldCoord (double xc, double yc, double zc, double& xw, double& yw, double& zw)
+bool CameraModel::cameraToWorldCoord (float xc, float yc, float zc, float& xw, float& yw, float& zw)
 {
 	bool done = false;
-	double common_denominator;
+	float common_denominator;
 	
 	if (isInit)
 	{

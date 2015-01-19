@@ -91,7 +91,7 @@ vector<Rect> ObservationManager::filterBoundingBoxVertical(Mat& image, Rect& bou
 	return boundingBoxes;
 }
 
-VisualReading ObservationManager::process(Mat frame, Mat fgMask)
+VisualReading ObservationManager::process(const Mat& frame, const Mat& fgMask, int minArea, int maxArea)
 {
 	/// Scale factor to increase the bounding box. Setting it to 1 will keep the bounding box at the original size.
 	float scaleFactor = 1;
@@ -110,46 +110,23 @@ VisualReading ObservationManager::process(Mat frame, Mat fgMask)
 		}
 	}
 	
-	VisualReading visualReading;
-	vector<Rect> boundingBoxes;
-	
-	/// Kinect (InSpace)
-	int minArea = 500;
-	int maxArea = 20000;
-	
-	/// PETS-2009
-	//int minArea = 370;
-	//int maxArea = 10000;
-	
-	/// Edinburgh-Atrium
-	//int minArea = 0;
-	//int maxArea = 5000;
-	
-	/// Soccer
-	//int minArea = 150;
-	//int maxArea = 1000;
-	
-	/// Venice
-	//int minArea = 3000;
-	//int maxArea = 50000;
-	
+	vector<VisualReading::Observation> obs;
 	vector<vector<Point> > contours;
-	
+	VisualReading visualReading;
 	Mat element3(3,3,CV_8U,Scalar(1));
-	morphologyEx(tmpBinaryImage,tmpBinaryImage,MORPH_CLOSE,element3);
 	
-    findContours(tmpBinaryImage,contours,CV_RETR_LIST,CV_CHAIN_APPROX_NONE);
+	morphologyEx(tmpBinaryImage,tmpBinaryImage,MORPH_CLOSE,element3);
+	findContours(tmpBinaryImage,contours,CV_RETR_LIST,CV_CHAIN_APPROX_NONE);
+	
 	vector<vector<Point> > contoursPoly(contours.size());
 	vector<Rect> boundRect(contours.size());
 	
 	tmpBinaryImage = Scalar(0);
 	
-	vector<VisualReading::Observation> obs;
-	
 	for (size_t contourIdx = 0; contourIdx < contours.size(); ++contourIdx)
     {
 		Moments moms = moments(Mat(contours[contourIdx]));
-		double area = moms.m00;
+		float area = moms.m00;
 		
         if ((area < minArea) || (area >= maxArea)) continue;
 		else
@@ -158,9 +135,9 @@ VisualReading ObservationManager::process(Mat frame, Mat fgMask)
 			boundRect[contourIdx] = boundingRect(Mat(contoursPoly[contourIdx]));
 			drawContours(tmpBinaryImage,contours,contourIdx,Scalar(255),CV_FILLED);
 			
-			const vector<Rect>& boundingBoxesVertical = filterBoundingBoxVertical(tmpBinaryImage,boundRect[contourIdx],8,0.2);
+			const vector<Rect>& boundingBoxes = filterBoundingBoxVertical(tmpBinaryImage,boundRect[contourIdx],8,0.2);
 			
-			for (vector<Rect>::const_iterator it = boundingBoxesVertical.begin(); it != boundingBoxesVertical.end(); ++it)
+			for (vector<Rect>::const_iterator it = boundingBoxes.begin(); it != boundingBoxes.end(); ++it)
 			{
 				VisualReading::Observation observation;
 				int counter;
@@ -198,7 +175,7 @@ VisualReading ObservationManager::process(Mat frame, Mat fgMask)
 					observation.model.histograms[2][i] /= counter;
 				}
 				
-				double imageX, imageHeadX, imageY, imageHeadY;
+				float imageX, imageHeadX, imageY, imageHeadY;
 				float barycenter, barycenterHead;
 				int whiteBins[roi.cols];
 				int endX, endY, index, whiteCounter;

@@ -11,5 +11,5 @@ class ObservationManager
 	public:
 		ObservationManager();
 		
-		VisualReading process(cv::Mat,cv::Mat);
+		VisualReading process(const cv::Mat&,const cv::Mat&,int,int);
 };

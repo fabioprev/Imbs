@@ -41,10 +41,10 @@ public:
     //! the default constructor
     BackgroundSubtractorIMBS();
 	//! fps constructor
-	BackgroundSubtractorIMBS(double fps);
+	BackgroundSubtractorIMBS(float fps);
     //! the full constructor
     BackgroundSubtractorIMBS(
-        double fps,
+        float fps,
         unsigned char fgThreshold,
         unsigned char associationThreshold,
         unsigned int samplingPeriod,
@@ -62,7 +62,7 @@ public:
     //! the destructor
     ~BackgroundSubtractorIMBS();
     //! the update operator
-    void apply(InputArray image, OutputArray fgmask, double learningRate=-1.);
+    void apply(InputArray image, OutputArray fgmask, float learningRate=-1.);
 
     //! computes a background image which shows only the highest bin for each pixel
     void getBackgroundImage(OutputArray backgroundImage) const;
@@ -122,7 +122,7 @@ private:
     //method for filtering out blobs smaller than a given area
     void areaThresholding();
     //method for getting the current time
-    double getTimestamp();
+    float getTimestamp();
     //method for converting from RGB to HSV
     Mat convertImageRGBtoHSV(const Mat& imageRGB);
     //method for changing the bg in case of sudden changes 
@@ -152,12 +152,12 @@ private:
 	bool loadedBg;
 	
     //number of fps
-    double fps;
+    float fps;
     //time stamp in milliseconds (ms)
-    double timestamp;
+    float timestamp;
     //previous time stamp in milliseconds (ms)
-    double prev_timestamp;
-    double initial_tick_count;
+    float prev_timestamp;
+    float initial_tick_count;
 	  //initial message to be shown until the first bg model is ready 
     Mat initialMsgGray;
     Mat initialMsgRGB;
@@ -182,7 +182,7 @@ private:
 	unsigned int maxBgBins;
 	unsigned int nframes;
 
-	double minArea;
+	float minArea;
 	bool bg_reset;
 	unsigned int persistencePeriod;
 	bool prev_area;

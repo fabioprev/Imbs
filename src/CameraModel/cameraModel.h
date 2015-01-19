@@ -71,33 +71,33 @@ namespace Etiseo {
 	  
 	  inline int width() const { return mImgWidth; }
 	  inline int height() const { return mImgHeight; }
-	  inline double ncx() const { return mNcx; }
-	  inline double nfx() const { return mNfx; }
-	  inline double dx() const { return mDx; }
-	  inline double dy() const { return mDy; }
-	  inline double dpx() const { return mDpx; }
-	  inline double dpy() const { return mDpy; }
-	  inline double cx() const { return mCx; }
-	  inline double cy() const { return mCy; }
-	  inline double sx() const { return mSx; }
-	  inline double focal() const { return mFocal; }
-	  inline double kappa1() const { return mKappa1; }
-	  inline double tx() const { return mTx; }
-	  inline double ty() const { return mTy; }
-	  inline double tz() const { return mTz; }
-	  inline double rx() const { return mRx; }
-	  inline double ry() const { return mRy; }
-	  inline double rz() const { return mRz; }
-	  inline double cposx() const { return mCposx; }
-	  inline double cposy() const { return mCposy; }
-	  inline double cposz() const { return mCposz; }
+	  inline float ncx() const { return mNcx; }
+	  inline float nfx() const { return mNfx; }
+	  inline float dx() const { return mDx; }
+	  inline float dy() const { return mDy; }
+	  inline float dpx() const { return mDpx; }
+	  inline float dpy() const { return mDpy; }
+	  inline float cx() const { return mCx; }
+	  inline float cy() const { return mCy; }
+	  inline float sx() const { return mSx; }
+	  inline float focal() const { return mFocal; }
+	  inline float kappa1() const { return mKappa1; }
+	  inline float tx() const { return mTx; }
+	  inline float ty() const { return mTy; }
+	  inline float tz() const { return mTz; }
+	  inline float rx() const { return mRx; }
+	  inline float ry() const { return mRy; }
+	  inline float rz() const { return mRz; }
+	  inline float cposx() const { return mCposx; }
+	  inline float cposy() const { return mCposy; }
+	  inline float cposz() const { return mCposz; }
 	  
-	  void setGeometry(int width, int height, double ncx, double nfx, 
-	  					double dx, double dy, double dpx, double dpy);
+	  void setGeometry(int width, int height, float ncx, float nfx, 
+	  					float dx, float dy, float dpx, float dpy);
 		
-	  void setIntrinsic(double focal, double kappa1, double cx, double cy, double sx);
+	  void setIntrinsic(float focal, float kappa1, float cx, float cy, float sx);
 	  
-	  void setExtrinsic(double tx, double ty, double tz, double rx, double ry, double rz);
+	  void setExtrinsic(float tx, float ty, float tz, float rx, float ry, float rz);
 	   
 	  //! Loading from an XML
 	  virtual bool fromXml(std::istream& is);
@@ -109,20 +109,20 @@ namespace Etiseo {
 	  
 	  //! Coordinate manipulation
 	  //! from image coordinate to world coordinate
-	  bool imageToWorld(double Xi, double Yi, double Zw, double& Xw, double &Yw);
+	  bool imageToWorld(float Xi, float Yi, float Zw, float& Xw, float &Yw);
 	  
 	  //! from world coordinate to image coordinate
-	  bool worldToImage(double Xw, double Yw, double Zw, double& Xi, double& Yi);
+	  bool worldToImage(float Xw, float Yw, float Zw, float& Xi, float& Yi);
 	  
 	  //! convert from undistorted to distorted image
-	  bool undistortedToDistortedImageCoord (double Xfu, double Yfu, double& Xfd, double& Yfd);
+	  bool undistortedToDistortedImageCoord (float Xfu, float Yfu, float& Xfd, float& Yfd);
 	  //! convert from distorted to undistorted image
-	  bool distortedToUndistortedImageCoord (double Xfd, double Yfd, double& Xfu, double& Yfu);
+	  bool distortedToUndistortedImageCoord (float Xfd, float Yfd, float& Xfu, float& Yfu);
 	  
 	  //! from world coordinate to camera coordinate
-	  bool worldToCameraCoord (double xw, double yw, double zw, double& xc, double& yc, double& zc);
+	  bool worldToCameraCoord (float xw, float yw, float zw, float& xc, float& yc, float& zc);
 	  //! from camera coordinate to world coordinate
-	  bool cameraToWorldCoord (double xc, double yc, double zc, double& xw, double& yw, double& zw);
+	  bool cameraToWorldCoord (float xc, float yc, float zc, float& xw, float& yw, float& zw);
 
 	protected:
 	
@@ -130,9 +130,9 @@ namespace Etiseo {
 		
 		//! Coordinate manipulation, intermediate transformation :
 		//! convert from distorted to undistorted sensor plane coordinates 
-		void distortedToUndistortedSensorCoord (double Xd, double Yd, double& Xu, double& Yu);
+		void distortedToUndistortedSensorCoord (float Xd, float Yd, float& Xu, float& Yu);
 		//! convert from undistorted to distorted sensor plane coordinates
-		void undistortedToDistortedSensorCoord (double Xu, double Yu, double& Xd, double& Yd);
+		void undistortedToDistortedSensorCoord (float Xu, float Yu, float& Xd, float& Yd);
 		
 	private:
 		
@@ -142,43 +142,43 @@ namespace Etiseo {
 		// geometry
 		int				mImgWidth;
 		int				mImgHeight;
-		double			mNcx;
-		double			mNfx;
-		double			mDx;
-		double			mDy;
-		double			mDpx;
-		double			mDpy;
+		float			mNcx;
+		float			mNfx;
+		float			mDx;
+		float			mDy;
+		float			mDpx;
+		float			mDpy;
 
 		// intrinsic 
-		double			mFocal;
-		double			mKappa1;
-		double			mCx;
-		double			mCy;
-		double			mSx;
+		float			mFocal;
+		float			mKappa1;
+		float			mCx;
+		float			mCy;
+		float			mSx;
  
 		// extrinsic 
-		double			mTx;
-		double			mTy;
-		double			mTz;
-		double			mRx;
-		double			mRy;
-		double			mRz;
+		float			mTx;
+		float			mTy;
+		float			mTz;
+		float			mRx;
+		float			mRy;
+		float			mRz;
 		
 		// for computation
-		double			mR11;
-		double			mR12;
-		double			mR13;
-		double			mR21;
-		double			mR22;
-		double			mR23;
-		double			mR31;
-		double			mR32;
-		double			mR33;
+		float			mR11;
+		float			mR12;
+		float			mR13;
+		float			mR21;
+		float			mR22;
+		float			mR23;
+		float			mR31;
+		float			mR32;
+		float			mR33;
 		
 		//camera position
-		double			mCposx;
-		double			mCposy;
-		double			mCposz;
+		float			mCposx;
+		float			mCposy;
+		float			mCposz;
 		
  };
 };

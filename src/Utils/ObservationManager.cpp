@@ -116,6 +116,7 @@ VisualReading ObservationManager::process(const Mat& frame, const Mat& fgMask, i
 	Mat element3(3,3,CV_8U,Scalar(1));
 	
 	morphologyEx(tmpBinaryImage,tmpBinaryImage,MORPH_CLOSE,element3);
+	//dilate(tmpBinaryImage,tmpBinaryImage,element3,Point(-1,-1),1);
 	findContours(tmpBinaryImage,contours,CV_RETR_LIST,CV_CHAIN_APPROX_NONE);
 	
 	vector<vector<Point> > contoursPoly(contours.size());
@@ -288,6 +289,8 @@ VisualReading ObservationManager::process(const Mat& frame, const Mat& fgMask, i
 			}
 		}
 	}
+	
+	imshow("Foreground (with rectangles)",tmpBinaryImage);
 	
 	visualReading.setObservations(obs);
 	visualReading.setObservationsAgentPose(Point2f(0.0,0.0));

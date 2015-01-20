@@ -28,7 +28,7 @@ using namespace cv;
 static const float defaultFps = 25.0;
 static const unsigned char defaultFgThreshold = 15;
 static const unsigned char defaultAssociationThreshold = 5;
-static const unsigned int defaultSamplingPeriod = 1000;
+static const unsigned int defaultSamplingPeriod = 500;
 static const unsigned int defaultMinBinHeight = 2;
 static const unsigned int defaultNumSamples = 30;
 static const float defaultAlpha = 0.65f;

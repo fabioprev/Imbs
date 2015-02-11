@@ -85,10 +85,23 @@ public:
 			counter = NULL;
 		}
 		
+		~_BgModel()
+		{
+			delete values;
+			delete isValid;
+			delete isFg;
+			delete counter;
+			
+			values = 0;
+			isValid = 0;
+			isFg = 0;
+			counter = 0;
+		}
+		
 		Vec3b* values;
 		bool* isValid;
 		bool* isFg;
-		uchar* counter;
+		int* counter;
 	} BgModel;
 
 	//struct for modeling the background values for a single pixel
@@ -96,13 +109,24 @@ public:
 	{
 		_Bins()
 		{
-			binValues = NULL;
-			binHeights = NULL;
-			isFg = NULL;
+			binValues = 0;
+			binHeights = 0;
+			isFg = 0;
 		}
-	
+		
+		~_Bins()
+		{
+			delete binValues;
+			delete binHeights;
+			delete isFg;
+			
+			binValues = 0;
+			binHeights = 0;
+			isFg = 0;
+		}
+		
 		Vec3b* binValues;
-		uchar* binHeights;
+		int* binHeights;
 		bool* isFg;
 	} Bins;
 
@@ -204,7 +228,6 @@ public:
     unsigned int getFgThreshold() {
         return fgThreshold;
     }
-    void getBgModel(BgModel bgModel_copy[], int size);
 };
 
 #endif //__IMBS_HPP__

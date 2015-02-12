@@ -5,7 +5,7 @@ project(Imbs CXX C)
 get_filename_component(PROJECT_ROOT "${PROJECT_SOURCE_DIR}" ABSOLUTE)
 
 find_package(LibXml2 REQUIRED)
-find_package(OpenCV)
+find_package(OpenCV REQUIRED)
 
 if (OpenCV_FOUND)
 	message(STATUS "Found OpenCV: ${OpenCV_INCLUDE_DIRS} (found version \"${OpenCV_VERSION}\")")

@@ -1,18 +1,36 @@
 /*
- *  IMBS Background Subtraction Library 
+ *  IMBS Background Subtraction Library
+ *  Copyright 2012 Domenico Daniele Bloisi
  *
- *  This file imbs.hpp contains the C++ OpenCV based implementation for
+ *  This file is part of IMBS and it is distributed under the terms of the
+ *  GNU Lesser General Public License (Lesser GPL)
+ *
+ *  
+ *
+ *  IMBS is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  IMBS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with IMBS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  This file contains the C++ OpenCV based implementation for
  *  IMBS algorithm described in
+ *  
  *  D. D. Bloisi and L. Iocchi
  *  "Independent Multimodal Background Subtraction"
  *  In Proc. of the Third Int. Conf. on Computational Modeling of Objects
  *  Presented in Images: Fundamentals, Methods and Applications, pp. 39-44, 2012.
  *  Please, cite the above paper if you use IMBS.
  *  
- *  This software is provided without any warranty about its usability. 
- *  It is for educational purposes and should be regarded as such.
  *
- *  Written by Domenico D. Bloisi
+ *  IMBS has been written by Domenico Daniele Bloisi
  *
  *  Please, report suggestions/comments/bugs to
  *  domenico.bloisi@gmail.com
@@ -40,25 +58,21 @@ class BackgroundSubtractorIMBS
 public:
     //! the default constructor
     BackgroundSubtractorIMBS();
-	//! fps constructor
-	BackgroundSubtractorIMBS(float fps);
     //! the full constructor
-    BackgroundSubtractorIMBS(
-        float fps,
-        unsigned char fgThreshold,
-        unsigned char associationThreshold,
-        unsigned int samplingPeriod,
-        unsigned int minBinHeight,
-        unsigned int numSamples,
-        float alpha,
-        float beta,
-        unsigned char tau_s,
-        unsigned char tau_h,
-        unsigned int minArea,
-        unsigned int persistencePeriod,
-        bool morphologicalFiltering
-    );
-	
+    BackgroundSubtractorIMBS(float fps,
+			unsigned int fgThreshold=15,
+			unsigned int associationThreshold=5,
+			float samplingPeriod=500.,
+			unsigned int minBinHeight=2,
+			unsigned int numSamples=45,
+			float alpha=0.65,
+			float beta=1.15,
+			float tau_s=60.,
+			float tau_h=40.,
+			float minArea=30.,
+			float persistencePeriod=10000.,
+			bool morphologicalFiltering=false
+    		);
     //! the destructor
     ~BackgroundSubtractorIMBS();
     //! the update operator
@@ -67,70 +81,11 @@ public:
     //! computes a background image which shows only the highest bin for each pixel
     void getBackgroundImage(OutputArray backgroundImage) const;
 
-	void rgbSuppression();
-	
     //! re-initiaization method
     void initialize(Size frameSize, int frameType);
 	
 	bool loadBg(const char* filename);
 	void saveBg(string* filename);
-	
-	typedef struct _BgModel
-	{
-		_BgModel()
-		{
-			values = NULL;
-			isValid = NULL;
-			isFg = NULL;
-			counter = NULL;
-		}
-		
-		~_BgModel()
-		{
-			delete values;
-			delete isValid;
-			delete isFg;
-			delete counter;
-			
-			values = 0;
-			isValid = 0;
-			isFg = 0;
-			counter = 0;
-		}
-		
-		Vec3b* values;
-		bool* isValid;
-		bool* isFg;
-		int* counter;
-	} BgModel;
-
-	//struct for modeling the background values for a single pixel
-	typedef struct _Bins
-	{
-		_Bins()
-		{
-			binValues = 0;
-			binHeights = 0;
-			isFg = 0;
-		}
-		
-		~_Bins()
-		{
-			delete binValues;
-			delete binHeights;
-			delete isFg;
-			
-			binValues = 0;
-			binHeights = 0;
-			isFg = 0;
-		}
-		
-		Vec3b* binValues;
-		int* binHeights;
-		bool* isFg;
-	} Bins;
-
-	bool isBackgroundCreated;
 
 private:
     //method for creating the background model
@@ -152,6 +107,8 @@ private:
     //method for changing the bg in case of sudden changes 
     void changeBg();
 	
+	
+
     //current input RGB frame
     Mat frame;
     vector<Mat> frameBGR;
@@ -186,8 +143,63 @@ private:
     Mat initialMsgGray;
     Mat initialMsgRGB;
 	
+    //struct for modeling the background values for a single pixel
+    typedef struct _Bins {
+	  Vec3b* binValues;
+	  uchar* binHeights;
+	  bool* isFg;
+	  
+	  _Bins()
+	  {
+		  binValues = 0;
+		  binHeights = 0;
+		  isFg = 0;
+	  }
+	  
+	  ~_Bins()
+	  {
+		  delete binValues;
+		  delete binHeights;
+		  delete isFg;
+		  
+		  binValues = 0;
+		  binHeights = 0;
+		  isFg = 0;
+	  }
+    } Bins;
+	  
 	Bins* bgBins;
+public:
+    //struct for modeling the background values for the entire frame
+	typedef struct _BgModel {
+		  Vec3b* values;
+		  bool* isValid;
+		  bool* isFg;
+		  uchar* counter;
+		  
+		  _BgModel()
+		  {
+			  values = 0;
+			  isValid = 0;
+			  isFg = 0;
+			  counter = 0;
+		  }
+		  
+		  ~_BgModel()
+		  {
+			  delete values;
+			  delete isValid;
+			  delete isFg;
+			  delete counter;
+			  
+			  values = 0;
+			  isValid = 0;
+			  isFg = 0;
+			  counter = 0;
+		  }
+	} BgModel;
 	
+	bool isBackgroundCreated;
 private:
 	BgModel* bgModel;
 
@@ -228,6 +240,7 @@ public:
     unsigned int getFgThreshold() {
         return fgThreshold;
     }
+    void getBgModel(BgModel bgModel_copy[], int size);
 };
 
 #endif //__IMBS_HPP__

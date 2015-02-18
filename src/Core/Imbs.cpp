@@ -1,18 +1,36 @@
 /*
- *  IMBS Background Subtraction Library 
+ *  IMBS Background Subtraction Library
+ *  Copyright 2012 Domenico Daniele Bloisi
  *
- *  This file imbs.hpp contains the C++ OpenCV based implementation for
+ *  This file is part of IMBS and it is distributed under the terms of the
+ *  GNU Lesser General Public License (Lesser GPL)
+ *
+ *  
+ *
+ *  IMBS is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  IMBS is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with IMBS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  This file contains the C++ OpenCV based implementation for
  *  IMBS algorithm described in
+ *  
  *  D. D. Bloisi and L. Iocchi
  *  "Independent Multimodal Background Subtraction"
  *  In Proc. of the Third Int. Conf. on Computational Modeling of Objects
  *  Presented in Images: Fundamentals, Methods and Applications, pp. 39-44, 2012.
  *  Please, cite the above paper if you use IMBS.
  *  
- *  This software is provided without any warranty about its usability. 
- *  It is for educational purposes and should be regarded as such.
  *
- *  Written by Domenico D. Bloisi
+ *  IMBS has been written by Domenico Daniele Bloisi
  *
  *  Please, report suggestions/comments/bugs to
  *  domenico.bloisi@gmail.com
@@ -24,383 +42,54 @@
 using namespace std;
 using namespace cv;
 
-// default parameters of IMBS algorithm
-static const float defaultFps = 25.0;
-static const unsigned char defaultFgThreshold = 15;
-static const unsigned char defaultAssociationThreshold = 5;
-static const unsigned int defaultSamplingPeriod = 500;
-static const unsigned int defaultMinBinHeight = 2;
-static const unsigned int defaultNumSamples = 30;
-static const float defaultAlpha = 0.65f;
-static const float defaultBeta = 1.15f;
-static const unsigned char defaultTau_s = 60;
-static const unsigned char defaultTau_h = 40;
-static const unsigned int defaultMinArea = 30;
-static const unsigned int defaultPersistencePeriod = 10000;
-static const bool defaultMorphologicalFiltering = true;
-
-class Parallel_getFg: public cv::ParallelLoopBody
-{   
-private:
-	Mat fgmask;
-	BackgroundSubtractorIMBS::BgModel* bgModel;
-	int maxBgBins;
-	Mat frameB;
-	Mat frameG;
-	Mat frameR;
-	int fgThreshold;
-	unsigned int* persistenceMap;
-	unsigned char PERSISTENCE_LABEL;
-	const unsigned char FOREGROUND_LABEL;
-	
-	float timestamp;
-	float prev_timestamp;
-	unsigned int persistencePeriod;
-	
-public:
-	Parallel_getFg(Mat& _fgmask, Mat& _frameB, Mat& _frameG, Mat& _frameR,
-				   unsigned int* _persistenceMap,
-				   BackgroundSubtractorIMBS::BgModel* bufferToProcess,
-				   const int _maxBgBins, const int _fgThreshold,
-				   const unsigned char _PERSISTENCE_LABEL, const unsigned char _FOREGROUND_LABEL,
-				   const float _timestamp, const float _prev_timestamp, const unsigned int _persistencePeriod)
-		: fgmask(_fgmask), bgModel(bufferToProcess), maxBgBins(_maxBgBins), frameB(_frameB), frameG(_frameG), frameR(_frameR), fgThreshold(_fgThreshold),
-		  persistenceMap(_persistenceMap), PERSISTENCE_LABEL(_PERSISTENCE_LABEL), FOREGROUND_LABEL(_FOREGROUND_LABEL),
-		  timestamp(_timestamp), prev_timestamp(_prev_timestamp), persistencePeriod(_persistencePeriod) {}
-	
-	virtual void operator()( const cv::Range &r ) const {
-		//register BackgroundSubtractorIMBS::BgModel *inputOutputBufferPTR=bgModel+r.start;
-		//for (register int p = r.start; p != r.end; ++p, ++inputOutputBufferPTR)
-		for (register int p = r.start; p != r.end; ++p)
-		{
-			bool isFg = true;
-			bool conditionalUpdated = false;
-			int d = 0;
-			for(int n = 0; n < maxBgBins; ++n) {
-				//if(!((*inputOutputBufferPTR).isValid[n])) {
-				if(!(bgModel[p].isValid[n])) {
-					if(n == 0) {
-						isFg = false;
-					}
-					break;
-				}
-				else { //the model is valid
-					d = std::max(
-								//(int)std::abs((*inputOutputBufferPTR).values[n][0] - frameBGR[0].data[p]),
-								(int)std::abs(bgModel[p].values[n][0] - frameB.data[p]),
-							//std::abs((*inputOutputBufferPTR).values[n][1] - frameBGR[1].data[p])
-							std::abs(bgModel[p].values[n][1] - frameG.data[p])
-							);
-					d = std::max(
-								//(int)d, std::abs((*inputOutputBufferPTR).values[n][2] - frameBGR[2].data[p])
-								(int)d, std::abs(bgModel[p].values[n][2] - frameR.data[p])
-							);
-					if(d < fgThreshold){
-						//check if it is a potential background pixel
-						//from stationary object
-						//if((*inputOutputBufferPTR).isFg[n]) {
-						if(bgModel[p].isFg[n]) {
-							conditionalUpdated = true;
-							break;
-						}
-						else {
-							isFg = false;
-							persistenceMap[p] = 0;
-						}
-					}
-				} //end else (the model is valid)
-			} //end for
-			if(isFg) {
-				if(conditionalUpdated) {
-					fgmask.data[p] = PERSISTENCE_LABEL;
-					persistenceMap[p] += (timestamp - prev_timestamp);
-					if(persistenceMap[p] > persistencePeriod) {
-						for(int n = 0; n < maxBgBins; ++n) {
-							if(!bgModel[p].isValid[n]) {
-								break;
-							}
-							bgModel[p].isFg[n] = false;
-						}
-					}
-				}
-				else {
-					fgmask.data[p] = FOREGROUND_LABEL;
-					persistenceMap[p] = 0;
-				}
-			} //end if isFg
-		}//end for
-	}//end function
-};
-
-class Parallel_createBg: public cv::ParallelLoopBody
-{   
-private:
-	Mat fgmask;
-	Mat bgSampleB;
-	Mat bgSampleG;
-	Mat bgSampleR;  
-	unsigned int bg_sample_number;
-	unsigned int numSamples;
-	BackgroundSubtractorIMBS::BgModel* bgModel;
-	BackgroundSubtractorIMBS::Bins* bgBins;
-	unsigned int minBinHeight;
-	unsigned int maxBgBins;
-	unsigned int fgThreshold;
-	
-	unsigned char PERSISTENCE_LABEL;
-	unsigned char FOREGROUND_LABEL;  
-	unsigned char associationThreshold;  
-	
-public:
-	Parallel_createBg(Mat& _fgmask, Mat& _bgSampleB, Mat& _bgSampleG, Mat& _bgSampleR,
-					  const unsigned int _bg_sample_number,
-					  const unsigned int _numSamples,
-					  BackgroundSubtractorIMBS::BgModel* _bgModel,
-					  BackgroundSubtractorIMBS::Bins* _bgBins,
-					  const unsigned int _minBinHeight,
-					  const unsigned int _maxBgBins, const unsigned int _fgThreshold,
-					  const unsigned char _PERSISTENCE_LABEL, const unsigned char _FOREGROUND_LABEL,
-					  const unsigned char _associationThreshold )
-	{
-		fgmask = _fgmask;
-		bgSampleB = _bgSampleB;
-		bgSampleG = _bgSampleG;
-		bgSampleR = _bgSampleR;
-		bg_sample_number = _bg_sample_number;
-		numSamples = _numSamples;
-		bgModel = _bgModel;
-		bgBins = _bgBins;
-		minBinHeight = _minBinHeight;
-		maxBgBins = _maxBgBins;
-		fgThreshold = _fgThreshold;
-		PERSISTENCE_LABEL = _PERSISTENCE_LABEL;
-		FOREGROUND_LABEL = _FOREGROUND_LABEL;
-		associationThreshold = _associationThreshold;
-	}
-	
-	
-	
-	virtual void operator()( const cv::Range &r ) const
-	{
-		/* create a statistical model for each pixel (a set of bins of variable size) */
-		for (register int p = r.start; p != r.end; ++p)
-		{
-			/* create an initial bin for each pixel from the first sample (bg_sample_number = 0) */
-			if (bg_sample_number == 0) {
-				bgBins[p].binValues[0][0] = bgSampleB.data[p];
-				bgBins[p].binValues[0][1] = bgSampleG.data[p];
-				bgBins[p].binValues[0][2] = bgSampleR.data[p];
-				
-				bgBins[p].binHeights[0] = 1;
-				
-				for(unsigned int s = 1; s < numSamples; ++s)  {
-					bgBins[p].binHeights[s] = 0;
-				}
-				
-				/* if the sample pixel is from foreground keep track of that situation */
-				if(fgmask.data[p] == FOREGROUND_LABEL) {
-					bgBins[p].isFg[0] = true;
-				}
-				else {
-					bgBins[p].isFg[0] = false;
-				}
-				
-				
-			}
-			else {
-				Vec3b currentPixel;
-				currentPixel[0] = bgSampleB.data[p];
-				currentPixel[1] = bgSampleG.data[p];
-				currentPixel[2] = bgSampleR.data[p];
-				
-				int den = 0;
-				
-				for (unsigned int s = 0; s < bg_sample_number; ++s) {
-					/* try to associate the current pixel values to an existing bin */
-					if (std::abs(currentPixel[2] - bgBins[p].binValues[s][2]) <= associationThreshold &&
-							std::abs(currentPixel[1] - bgBins[p].binValues[s][1]) <= associationThreshold &&
-							std::abs(currentPixel[0] - bgBins[p].binValues[s][0]) <= associationThreshold )
-					{
-						den = (bgBins[p].binHeights[s] + 1);
-						for (int k = 0; k < 3; ++k) {
-							bgBins[p].binValues[s][k] =
-									(bgBins[p].binValues[s][k] * bgBins[p].binHeights[s] + currentPixel[k]) / den;
-						}
-						
-						bgBins[p].binHeights[s]++; //increment the height of the bin
-						if (fgmask.data[p] == FOREGROUND_LABEL) {
-							bgBins[p].isFg[s] = true;
-						}
-						break;
-					}
-					//if the association is not possible, create a new bin
-					else if (bgBins[p].binHeights[s] == 0) {
-						bgBins[p].binValues[s] = currentPixel;
-						bgBins[p].binHeights[s]++;
-						if(fgmask.data[p] == FOREGROUND_LABEL) {
-							bgBins[p].isFg[s] = true;
-						}
-						else {
-							bgBins[p].isFg[s] = false;
-						}
-						break;
-					}
-					else
-						continue;
-				}//for(unsigned int s = 0; s <= bg_sample_number; ++s)
-				
-				//if all samples have been processed
-				//it is time to compute the fg mask
-				if (bg_sample_number == (numSamples - 1)) {
-					unsigned int index = 0;
-					int max_height = -1;
-					
-					for(unsigned int s = 0; s < numSamples; ++s) {
-						if (bgBins[p].binHeights[s] == 0 && index < maxBgBins) {
-							bgModel[p].isValid[index] = false;
-							break;
-						}
-						
-						if(index == maxBgBins) {
-							break;
-						}
-						else if(bgBins[p].binHeights[s] >= (int) minBinHeight) {
-							if(fgmask.data[p] == PERSISTENCE_LABEL) {
-								for(unsigned int n = 0; n < maxBgBins; n++) {
-									if(!bgModel[p].isValid[n]) {
-										break;
-									}
-									
-									unsigned int d =
-											std::max((int)std::abs(bgModel[p].values[n][0] - bgBins[p].binValues[s][0]),
-											std::abs(bgModel[p].values[n][1] - bgBins[p].binValues[s][1]) );
-									
-									d = std::max((int)d, std::abs(bgModel[p].values[n][2] - bgBins[p].binValues[s][2]) );
-									
-									if(d < fgThreshold) {
-										bgModel[p].isFg[n] = false;
-										bgBins[p].isFg[s] = false;
-									}
-								}//for maxbgbins
-							}//if persistence label
-							
-							if(bgBins[p].binHeights[s] > max_height) {
-								max_height = bgBins[p].binHeights[s];
-								
-								for (int k = 0; k < 3; ++k) {
-									bgModel[p].values[index][k] = bgModel[p].values[0][k];
-									bgModel[p].values[0][k] = bgBins[p].binValues[s][k];
-								}
-								
-								bgModel[p].isValid[index] = true;
-								bgModel[p].isFg[index] = bgModel[p].isFg[0];
-								bgModel[p].counter[index] = bgModel[p].counter[0];
-								
-								bgModel[p].isValid[0] = true;
-								bgModel[p].isFg[0] = bgBins[p].isFg[s];
-								bgModel[p].counter[0] = bgBins[p].binHeights[s];
-							}
-							else {
-								for(int k = 0; k < 3; ++k) {
-									bgModel[p].values[index][k] = bgBins[p].binValues[s][k];
-								}
-								
-								bgModel[p].isValid[index] = true;
-								bgModel[p].isFg[index] = bgBins[p].isFg[s];
-								bgModel[p].counter[index] = bgBins[p].binHeights[s];
-							}
-							
-							++index;
-						}
-					} //for all numSamples
-				}//bg_sample_number == (numSamples - 1)
-			}//else --> if(frame_number == 0)
-		}//numPixels
-	}
-};
-
-BackgroundSubtractorIMBS::BackgroundSubtractorIMBS() :
-	numPixels(0),
-	bgFilename(0),
-	loadedBg(false),
-	bgBins(NULL),
-	bgModel(NULL),
-	nframes(0),
-	persistenceMap(NULL)
+BackgroundSubtractorIMBS::BackgroundSubtractorIMBS()
 {
-	fps = defaultFps;
-	fgThreshold = defaultFgThreshold;
-	associationThreshold = defaultAssociationThreshold;
-	samplingPeriod = defaultSamplingPeriod;
-	minBinHeight = defaultMinBinHeight;
-	numSamples = defaultNumSamples;
-	alpha = defaultAlpha;
-	beta = defaultBeta;
-	tau_s = defaultTau_s;
-	tau_h = defaultTau_h;
-	minArea = defaultMinArea;
-	persistencePeriod = defaultPersistencePeriod;
-	morphologicalFiltering = defaultMorphologicalFiltering;
+	fps = 0.;
+	fgThreshold = 15;
+	associationThreshold = 5;
+	samplingPeriod = 1000.;//ms
+	minBinHeight = 2;
+	numSamples = 30;
+	alpha = 0.65;
+	beta = 1.15;
+	tau_s = 60.;
+	tau_h = 40.;
+	minArea = 30.;
+	persistencePeriod = samplingPeriod * numSamples / 3.0;//ms
 	
 	initial_tick_count = (float)getTickCount();
 	
-}
-
-BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(float fps) :
-	numPixels(0),
-	bgFilename(0),
-	loadedBg(false),
-	bgBins(NULL),
-	bgModel(NULL),
-	nframes(0),
-	persistenceMap(NULL)
-{
-	this->fps = fps;
-	fgThreshold = defaultFgThreshold;
-	associationThreshold = defaultAssociationThreshold;
-	samplingPeriod = defaultSamplingPeriod;
-	minBinHeight = defaultMinBinHeight;
-	numSamples = defaultNumSamples;
-	alpha = defaultAlpha;
-	beta = defaultBeta;
-	tau_s = defaultTau_s;
-	tau_h = defaultTau_h;
-	minArea = defaultMinArea;
-	persistencePeriod = defaultPersistencePeriod;
-	morphologicalFiltering = defaultMorphologicalFiltering;
+	//morphological Opening and closing
+	morphologicalFiltering = false;
 	
-	initial_tick_count = (float)getTickCount();
-	
+	bgBins = 0;
+	bgModel = 0;
+	persistenceMap = 0;
+	bgFilename = 0;
+	loadedBg = false;
+	isBackgroundCreated = false;
 }
 
 BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(
 		float fps,
-		unsigned char fgThreshold,
-		unsigned char associationThreshold,
-		unsigned int samplingPeriod,
+		unsigned int fgThreshold,
+		unsigned int associationThreshold,
+		float samplingPeriod,
 		unsigned int minBinHeight,
 		unsigned int numSamples,
 		float alpha,
 		float beta,
-		unsigned char tau_s,
-		unsigned char tau_h,
-		unsigned int minArea,
-		unsigned int persistencePeriod,
-		bool morphologicalFiltering) : 
-	numPixels(0),
-	bgFilename(0),
-	bgBins(NULL),
-	bgModel(NULL),  
-	nframes(0),
-	persistenceMap(NULL)
+		float tau_s,
+		float tau_h,
+		float minArea,
+		float persistencePeriod,
+		bool morphologicalFiltering)
 {
-	this->nframes = 0;
-	this->numPixels = 0;
 	this->fps = fps;
 	this->fgThreshold = fgThreshold;
 	this->persistencePeriod = persistencePeriod;
 	
-	if (minBinHeight <= 1){
+	if(minBinHeight <= 1){
 		this->minBinHeight = 1;
 	}
 	else {
@@ -417,13 +106,20 @@ BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(
 	this->tau_h = tau_h;
 	this->minArea = minArea;
 	
-	if (fps == 0.) {
+	if(fps == 0.)
 		initial_tick_count = (float)getTickCount();
-	} else {
+	else
 		initial_tick_count = 0;
-	}
 	
-	this->morphologicalFiltering = morphologicalFiltering;  
+	//morphological Opening and closing
+	this->morphologicalFiltering = morphologicalFiltering;
+	
+	bgBins = 0;
+	bgModel = 0;
+	persistenceMap = 0;	
+	bgFilename = 0;
+	loadedBg = false;
+	isBackgroundCreated = false;
 }
 
 BackgroundSubtractorIMBS::~BackgroundSubtractorIMBS()
@@ -436,8 +132,11 @@ BackgroundSubtractorIMBS::~BackgroundSubtractorIMBS()
 
 void BackgroundSubtractorIMBS::initialize(Size frameSize, int frameType)
 {
-	if (loadedBg)
+	if(loadedBg)
 		return;
+	//cout << "INPUT: WIDTH " << frameSize.width << "  HEIGHT " << frameSize.height <<
+	//		"  FPS " << fps << endl;
+	//cout << endl;
 	
 	this->frameSize = frameSize;
 	this->frameType = frameType;
@@ -493,46 +192,15 @@ void BackgroundSubtractorIMBS::initialize(Size frameSize, int frameType)
 	for(unsigned int p = 0; p < numPixels; ++p)
 	{
 		bgBins[p].binValues = new Vec3b[numSamples];
-		bgBins[p].binHeights = new int[numSamples];
+		bgBins[p].binHeights = new uchar[numSamples];
 		bgBins[p].isFg = new bool[numSamples];
 		
 		bgModel[p].values = new Vec3b[maxBgBins];
 		bgModel[p].isValid = new bool[maxBgBins];
 		bgModel[p].isValid[0] = false;
 		bgModel[p].isFg = new bool[maxBgBins];
-		bgModel[p].counter = new int[maxBgBins];
+		bgModel[p].counter = new uchar[maxBgBins];
 	}	
-}
-
-void BackgroundSubtractorIMBS::rgbSuppression() {
-	Mat sMat(frame.size(), CV_32FC1);
-	for(int i = 0; i < frame.rows; ++i) {
-		for(int j = 0; j < frame.cols; ++j) {
-			sMat.at<float>(i,j) = frame.at<Vec3b>(i,j)[0] +
-					frame.at<Vec3b>(i,j)[1] + frame.at<Vec3b>(i,j)[2];
-		}
-	}
-	float* sMat_data = (float*) sMat.data;
-	for(unsigned int p = 0; p < numPixels; ++p) {
-		if(fgmask.data[p]) {
-			for(unsigned int n = 0; n < maxBgBins; ++n) {
-				if(!bgModel[p].isValid[n]) {
-					break;
-				}
-				if(bgModel[p].isFg[n]) {
-					continue;
-				}
-				float sPixel = bgModel[p].values[n].val[0] +
-						bgModel[p].values[n].val[1] + bgModel[p].values[n].val[2];
-				float ratio = sMat_data[p]/sPixel;
-				if(    ratio > 0.7 && ratio < 1)
-				{
-					fgmask.data[p] = SHADOW_LABEL;
-					break;
-				}
-			}//for
-		}//if
-	}//numPixels
 }
 
 void BackgroundSubtractorIMBS::apply(InputArray _frame, OutputArray _fgmask, float learningRate)
@@ -543,7 +211,6 @@ void BackgroundSubtractorIMBS::apply(InputArray _frame, OutputArray _fgmask, flo
 	CV_Assert(frame.channels() == 3);
 	
 	bool needToInitialize = nframes == 0 || frame.type() != frameType;
-	
 	if( needToInitialize ) {
 		initialize(frame.size(), frame.type());
 	}
@@ -566,13 +233,12 @@ void BackgroundSubtractorIMBS::apply(InputArray _frame, OutputArray _fgmask, flo
 		changeBg();
 	}
 	
+	//wait for the first model to be generated
 	if(bgModel[0].isValid[0]) {
-		getFg();
-		//hsvSuppression();
-		rgbSuppression();
+		getFg();    	
+		hsvSuppression();
 		filterFg();
-	}
-	
+	}	
 	//update the bg model
 	updateBg();
 	
@@ -684,19 +350,137 @@ void BackgroundSubtractorIMBS::hsvSuppression() {
 }
 
 void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
+	if(!bgSample.data) {
+		//cerr << "createBg -- an error occurred: " <<
+		//		" unable to retrieve frame no. " << bg_sample_number << endl;
+		
+		//TODO vedere gestione errori
+		abort();
+	}
+	//aux variable
+	Vec3b currentPixel;
 	//split bgSample in channels
 	cv::split(bgSample, bgSampleBGR);
-	
-	const int n=numPixels;
-	
-	parallel_for_(cv::Range(0,n-1),
-				  Parallel_createBg(fgmask, bgSampleBGR[0], bgSampleBGR[1], bgSampleBGR[2],
-			bg_sample_number, numSamples, bgModel, bgBins,
-			minBinHeight, maxBgBins, fgThreshold,
-			PERSISTENCE_LABEL, FOREGROUND_LABEL,
-			associationThreshold));
+	//create a statistical model for each pixel (a set of bins of variable size)
+	for(unsigned int p = 0; p < numPixels; ++p) {
+		//create an initial bin for each pixel from the first sample (bg_sample_number = 0)
+		if(bg_sample_number == 0) {
+			for(int k = 0; k < 3; ++k) {
+				bgBins[p].binValues[0][k] = bgSampleBGR[k].data[p];
+			}
+			bgBins[p].binHeights[0] = 1;
+			for(unsigned int s = 1; s < numSamples; ++s)	{
+				bgBins[p].binHeights[s] = 0;
+			}
+			//if the sample pixel is from foreground keep track of that situation
+			if(fgmask.data[p] == FOREGROUND_LABEL) {
+				bgBins[p].isFg[0] = true;
+			}
+			else {
+				bgBins[p].isFg[0] = false;
+			}
+		}//if(bg_sample_number == 0)
+		else { //bg_sample_number > 0
+			for(int k = 0; k < 3; ++k) {
+				currentPixel[k] = bgSampleBGR[k].data[p];
+			}
+			int den = 0;
+			for(unsigned int s = 0; s < bg_sample_number; ++s) {
+				//try to associate the current pixel values to an existing bin
+				if( std::abs(currentPixel[2] - bgBins[p].binValues[s][2]) <= (int) associationThreshold &&
+						std::abs(currentPixel[1] - bgBins[p].binValues[s][1]) <= (int) associationThreshold &&
+						std::abs(currentPixel[0] - bgBins[p].binValues[s][0]) <= (int) associationThreshold )
+				{
+					den = (bgBins[p].binHeights[s] + 1);
+					for(int k = 0; k < 3; ++k) {
+						bgBins[p].binValues[s][k] =
+								(bgBins[p].binValues[s][k] * bgBins[p].binHeights[s] + currentPixel[k]) / den;
+					}
+					bgBins[p].binHeights[s]++; //increment the height of the bin
+					if(fgmask.data[p] == FOREGROUND_LABEL) {
+						bgBins[p].isFg[s] = true;
+					}
+					break;
+				}
+				//if the association is not possible, create a new bin
+				else if(bgBins[p].binHeights[s] == 0)	{
+					bgBins[p].binValues[s] = currentPixel;
+					bgBins[p].binHeights[s]++;
+					if(fgmask.data[p] == FOREGROUND_LABEL) {
+						bgBins[p].isFg[s] = true;
+					}
+					else {
+						bgBins[p].isFg[s] = false;
+					}
+					break;
+				}
+				else continue;
+			}//for(unsigned int s = 0; s <= bg_sample_number; ++s)
+			
+			//if all samples have been processed
+			//it is time to compute the fg mask
+			if(bg_sample_number == (numSamples - 1)) {
+				unsigned int index = 0;
+				int max_height = -1;
+				for(unsigned int s = 0; s < numSamples; ++s){
+					if(bgBins[p].binHeights[s] == 0) {
+						bgModel[p].isValid[index] = false;
+						break;
+					}
+					if(index == maxBgBins) {
+						break;
+					}
+					else if(bgBins[p].binHeights[s] >= minBinHeight) {
+						if(fgmask.data[p] == PERSISTENCE_LABEL) {
+							for(unsigned int n = 0; n < maxBgBins; n++) {
+								if(!bgModel[p].isValid[n]) {
+									break;
+								}
+								unsigned int d = std::max((int)std::abs(bgModel[p].values[n][0] - bgBins[p].binValues[s][0]),
+										std::abs(bgModel[p].values[n][1] - bgBins[p].binValues[s][1]) );
+								d = std::max((int)d, std::abs(bgModel[p].values[n][2] - bgBins[p].binValues[s][2]) );
+								if(d < fgThreshold){
+									bgModel[p].isFg[n] = false;
+									bgBins[p].isFg[s] = false;
+								}
+							}
+						}
+						
+						if(bgBins[p].binHeights[s] > max_height) {
+							max_height = bgBins[p].binHeights[s];
+							
+							for(int k = 0; k < 3; ++k) {
+								bgModel[p].values[index][k] = bgModel[p].values[0][k];
+							}
+							bgModel[p].isValid[index] = true;
+							bgModel[p].isFg[index] = bgModel[p].isFg[0];
+							bgModel[p].counter[index] = bgModel[p].counter[0];
+							
+							for(int k = 0; k < 3; ++k) {
+								bgModel[p].values[0][k] = bgBins[p].binValues[s][k];
+							}
+							bgModel[p].isValid[0] = true;
+							bgModel[p].isFg[0] = bgBins[p].isFg[s];
+							bgModel[p].counter[0] = bgBins[p].binHeights[s];
+						}
+						else {
+							for(int k = 0; k < 3; ++k) {
+								bgModel[p].values[index][k] = bgBins[p].binValues[s][k];
+							}
+							bgModel[p].isValid[index] = true;
+							bgModel[p].isFg[index] = bgBins[p].isFg[s];
+							bgModel[p].counter[index] = bgBins[p].binHeights[s];
+						}
+						++index;
+					}
+				} //for all numSamples
+			}//bg_sample_number == (numSamples - 1)
+		}//else --> if(frame_number == 0)
+	}//numPixels
 	
 	if(bg_sample_number == (numSamples - 1)) {
+		//std::cout << "new bg created" << std::endl;
+		isBackgroundCreated = true;
 		persistenceImage = Scalar(0);
 		
 		bg_reset = false;
@@ -716,6 +500,34 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 				bgImage.at<cv::Vec3b>(i,j) = bgModel[p].values[0];
 			}
 		}
+		
+		if(bgFilename != NULL) {
+			ofstream file;
+			file.open(bgFilename->c_str());
+			file<<(int)frameSize.width<<" ";
+			file<<(int)frameSize.height<<endl;
+			file<<(int)frameType<<endl;
+			int c = 0;
+			for(int i = 0; i<frameSize.height; i++) {
+				for(int j = 0; j<frameSize.width; j++, c++) {
+					for(unsigned int e = 0; e < maxBgBins; e++) {
+						if(!bgModel[c].isValid[e]) {
+							file<<endl;
+							break;
+						}
+						file<<(int)bgModel[c].values[e].val[2]<<" ";
+						file<<(int)bgModel[c].values[e].val[1]<<" ";
+						file<<(int)bgModel[c].values[e].val[0]<<" ";
+						if(e == (maxBgBins - 1)) {
+							file<<endl;
+						}
+					}
+				}
+			}
+			file.close();
+			bgFilename = NULL;
+		}//if bgFilename	
+		
 	}
 }
 
@@ -723,12 +535,59 @@ void BackgroundSubtractorIMBS::getFg() {
 	fgmask = Scalar(0);
 	cv::split(frame, frameBGR);
 	
-	const int n=numPixels;
-	parallel_for_(cv::Range(0,n-1),
-				  Parallel_getFg(fgmask, frameBGR[0], frameBGR[1], frameBGR[2],
-			persistenceMap, bgModel, maxBgBins, fgThreshold,
-			PERSISTENCE_LABEL, FOREGROUND_LABEL,
-			timestamp, prev_timestamp, persistencePeriod));
+	bool isFg = true;
+	bool conditionalUpdated = false;
+	unsigned int d = 0;
+	for(unsigned int p = 0; p < numPixels; ++p) {
+		isFg = true;
+		conditionalUpdated = false;
+		d = 0;
+		for(unsigned int n = 0; n < maxBgBins; ++n) {
+			if(!bgModel[p].isValid[n]) {
+				if(n == 0) {
+					isFg = false;
+				}
+				break;
+			}
+			else { //the model is valid
+				d = std::max(
+							(int)std::abs(bgModel[p].values[n][0] - frameBGR[0].data[p]),
+						std::abs(bgModel[p].values[n][1] - frameBGR[1].data[p]) );
+				d = std::max(
+							(int)d, std::abs(bgModel[p].values[n][2] - frameBGR[2].data[p]) );
+				if(d < fgThreshold){
+					//check if it is a potential background pixel
+					//from stationary object
+					if(bgModel[p].isFg[n]) {
+						conditionalUpdated = true;
+						break;
+					}
+					else {
+						isFg = false;
+						persistenceMap[p] = 0;
+					}
+				}
+			}
+		}
+		if(isFg) {
+			if(conditionalUpdated) {
+				fgmask.data[p] = PERSISTENCE_LABEL;
+				persistenceMap[p] += (timestamp - prev_timestamp);
+				if(persistenceMap[p] > persistencePeriod) {
+					for(unsigned int n = 0; n < maxBgBins; ++n) {
+						if(!bgModel[p].isValid[n]) {
+							break;
+						}
+						bgModel[p].isFg[n] = false;
+					}
+				}
+			}
+			else {
+				fgmask.data[p] = FOREGROUND_LABEL;
+				persistenceMap[p] = 0;
+			}
+		}
+	}
 }
 
 void BackgroundSubtractorIMBS::areaThresholding()
@@ -936,9 +795,12 @@ void BackgroundSubtractorIMBS::filterFg() {
 
 void BackgroundSubtractorIMBS::changeBg() {
 	
+	//std::cout << "WARNING: changeBg" << std::endl;
+	
 	//samplingPeriod /= 2.;
 	//numSamples /= 2.;
 	//bg_reset = true;
+	//cout << "qua" << endl;
 	
 	///
 	/// Uncomment to enable the background update over time.
@@ -956,6 +818,30 @@ void BackgroundSubtractorIMBS::changeBg() {
 	///
 }
 
+void BackgroundSubtractorIMBS::getBgModel(BgModel bgModel_copy[], int size) {
+	if(size != (int) numPixels) {
+		return;
+	}
+	for(unsigned int i = 0; i < numPixels; ++i){
+		bgModel_copy[i].values = new Vec3b[maxBgBins];
+		bgModel_copy[i].isValid = new bool[maxBgBins];
+		bgModel_copy[i].isValid[0] = false;
+		bgModel_copy[i].isFg = new bool[maxBgBins];
+		bgModel_copy[i].counter = new uchar[maxBgBins];
+	}
+	for(unsigned int p = 0; p < numPixels; ++p) {
+		for(unsigned int n = 0; n < maxBgBins; ++n) {
+			if(!bgModel[p].isValid[n]) {
+				break;
+			}
+			bgModel_copy[p].values[n] = bgModel[p].values[n];
+			bgModel_copy[p].isValid[n] = bgModel[p].isValid[n];
+			bgModel_copy[p].isFg[n] = bgModel[p].isFg[n];
+			bgModel_copy[p].counter[n] = bgModel[p].counter[n];
+		}
+	}
+}
+
 bool BackgroundSubtractorIMBS::loadBg(const char* filename) {
 	string line;
 	ifstream file(filename, ifstream::in);
@@ -964,7 +850,14 @@ bool BackgroundSubtractorIMBS::loadBg(const char* filename) {
 		loadedBg = true;
 		isBackgroundCreated = true;
 		
+		//initialization step
+		//cout << endl;
+		//cout << "LOADED BG" << endl;
+		//cout << endl;
+		
+		//get frame size and frame type
 		getline(file, line);
+		//cout << line << endl;
 		
 		int index = line.find_first_of(" ");
 		string widthString = line.substr(0, index);
@@ -978,10 +871,16 @@ bool BackgroundSubtractorIMBS::loadBg(const char* filename) {
 		istringstream ss_h(heightString);
 		ss_h >> height;
 		
+		//cout << "width " << width << "   height " << height << endl;
+		
 		Size frameSize(width, height);
 		getline(file, line);
-		
+		//cout << line << endl;
 		int frameType = 0;
+		
+		//cout << "INPUT: WIDTH " << frameSize.width << "  HEIGHT " << frameSize.height <<
+		//		"  FPS " << fps << endl;
+		//cout << endl;
 		
 		this->frameSize = frameSize;
 		this->frameType = frameType;
@@ -1026,13 +925,14 @@ bool BackgroundSubtractorIMBS::loadBg(const char* filename) {
 		for(unsigned int p = 0; p < numPixels; ++p)
 		{
 			bgBins[p].binValues = new Vec3b[numSamples];
-			bgBins[p].binHeights = new int[numSamples];
+			bgBins[p].binHeights = new uchar[numSamples];
 			bgBins[p].isFg = new bool[numSamples];
+			
 			bgModel[p].values = new Vec3b[maxBgBins];
 			bgModel[p].isValid = new bool[maxBgBins];
 			bgModel[p].isValid[0] = false;
 			bgModel[p].isFg = new bool[maxBgBins];
-			bgModel[p].counter = new int[maxBgBins];
+			bgModel[p].counter = new uchar[maxBgBins];
 		}		
 		
 		while(!file.eof()) {
@@ -1063,33 +963,40 @@ bool BackgroundSubtractorIMBS::loadBg(const char* filename) {
 				ss_b >> b;
 				line.erase(0, index+1);
 				
-				bgModel[c].values[n].val[0] = b;
-				bgModel[c].values[n].val[1] = g;
-				bgModel[c].values[n].val[2] = r;
-				bgModel[c].isValid[n] = true;
-				bgModel[c].isFg[n] = false;
-				bgModel[c].counter[n] = minBinHeight;
+				//cout << "io" << endl;
 				
-				if (n == 0) {
+				bgModel[c].values[n].val[0] = b;
+				//cout << "io 1" << endl;
+				bgModel[c].values[n].val[1] = g;
+				//cout << "io 2" << endl;
+				bgModel[c].values[n].val[2] = r;
+				//cout << "io 3" << endl;
+				bgModel[c].isValid[n] = true;
+				//cout << "io 4" << endl;
+				bgModel[c].isFg[n] = false;
+				//cout << "io 5" << endl;
+				bgModel[c].counter[n] = minBinHeight;
+				//cout << "io 6" << endl;
+				
+				if(n == 0) {
 					int i = c/bgImage.cols;
 					int j = c - i*bgImage.cols;
-					
+					//cout << "i " << i << " j " << j << endl;
 					bgImage.at<Vec3b>(i, j) = bgModel[c].values[0];
 				}
-				
 				n++;
 			}
-			
 			c++;
 		}
-		
 		file.close();
-		
 		return true;
 	}
-	else return false;
+	else {
+		return false;
+	}
 }
 
 void BackgroundSubtractorIMBS::saveBg(string* filename) {
 	bgFilename = filename;
 }
+

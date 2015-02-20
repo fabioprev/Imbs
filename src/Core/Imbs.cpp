@@ -269,6 +269,7 @@ void BackgroundSubtractorIMBS::updateBg() {
 	
 	if(bg_frame_counter == numSamples - 1) {
 		createBg(bg_frame_counter);
+		
 		if (isFirstTime)
 		{
 			isFirstTime = false;
@@ -479,7 +480,7 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 	}//numPixels
 	
 	if(bg_sample_number == (numSamples - 1)) {
-		//std::cout << "new bg created" << std::endl;
+		std::cout << "new bg created" << std::endl;
 		isBackgroundCreated = true;
 		persistenceImage = Scalar(0);
 		
@@ -795,7 +796,7 @@ void BackgroundSubtractorIMBS::filterFg() {
 
 void BackgroundSubtractorIMBS::changeBg() {
 	
-	//std::cout << "WARNING: changeBg" << std::endl;
+	std::cout << "WARNING: changeBg" << std::endl;
 	
 	//samplingPeriod /= 2.;
 	//numSamples /= 2.;

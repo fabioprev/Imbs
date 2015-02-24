@@ -100,7 +100,7 @@ foreach (line ${contents})
 	
 	if ("${result}" STREQUAL "export Imbs_ROOT")
 		set(found true)
-		set(IMBS_ROOT_PATH ${line})
+		set(Imbs_ROOT_PATH ${line})
 	endif ("${result}" STREQUAL "export Imbs_ROOT")
 endforeach(line)
 
@@ -111,7 +111,7 @@ if (NOT found)
 	# Adding the path of the Imbs library
 	file(APPEND $ENV{HOME}/.bashrc "\nexport LD_LIBRARY_PATH=/usr/local/lib/Imbs:\${LD_LIBRARY_PATH}")
 else (NOT found)
-	if (NOT "${IMBS_ROOT_PATH}" STREQUAL "export Imbs_ROOT=${PROJECT_ROOT}")
+	if (NOT "${Imbs_ROOT_PATH}" STREQUAL "export Imbs_ROOT=${PROJECT_ROOT}")
 		execute_process(COMMAND cat $ENV{HOME}/.bashrc COMMAND grep -v "export LD_LIBRARY_PATH=/usr/local/lib/Imbs" OUTPUT_FILE $ENV{HOME}/.bashrc.tmp)
 		execute_process(COMMAND cat $ENV{HOME}/.profile COMMAND grep -v "export Imbs_ROOT" OUTPUT_FILE $ENV{HOME}/.profile.tmp)
 		execute_process(COMMAND mv $ENV{HOME}/.bashrc.tmp $ENV{HOME}/.bashrc)
@@ -124,7 +124,7 @@ else (NOT found)
 		
 		# Adding the path of the Imbs library
 		file(APPEND $ENV{HOME}/.bashrc "\nexport LD_LIBRARY_PATH=/usr/local/lib/Imbs:\${LD_LIBRARY_PATH}")
-	endif (NOT "${IMBS_ROOT_PATH}" STREQUAL "export Imbs_ROOT=${PROJECT_ROOT}")
+	endif (NOT "${Imbs_ROOT_PATH}" STREQUAL "export Imbs_ROOT=${PROJECT_ROOT}")
 endif (NOT found)
 
 set(CMAKE_INSTALL_PREFIX /usr/local/include)

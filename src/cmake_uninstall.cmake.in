@@ -21,3 +21,11 @@ endforeach(file)
 
 execute_process(COMMAND rm -rf @CMAKE_INSTALL_PREFIX@/Imbs RESULT_VARIABLE rm_retval OUTPUT_VARIABLE rm_out)
 execute_process(COMMAND rm -rf @CMAKE_INSTALL_PREFIX@/../lib/Imbs RESULT_VARIABLE rm_retval OUTPUT_VARIABLE rm_out)
+
+# Removing environment variables.
+execute_process(COMMAND cat $ENV{HOME}/.bashrc COMMAND grep -v "export LD_LIBRARY_PATH=/usr/local/lib/Imbs" OUTPUT_FILE $ENV{HOME}/.bashrc.tmp)
+execute_process(COMMAND cat $ENV{HOME}/.profile COMMAND grep -v "export Imbs_ROOT=/home/turtlebot/Fabio/Imbs/src" OUTPUT_FILE $ENV{HOME}/.profile.tmp)
+execute_process(COMMAND mv $ENV{HOME}/.bashrc.tmp $ENV{HOME}/.bashrc)
+execute_process(COMMAND mv $ENV{HOME}/.profile.tmp $ENV{HOME}/.profile)
+execute_process(COMMAND chown $ENV{SUDO_USER}.$ENV{SUDO_USER} $ENV{HOME}/.bashrc)
+execute_process(COMMAND chown $ENV{SUDO_USER}.$ENV{SUDO_USER} $ENV{HOME}/.profile)

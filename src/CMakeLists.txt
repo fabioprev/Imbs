@@ -6,6 +6,7 @@ get_filename_component(PROJECT_ROOT "${PROJECT_SOURCE_DIR}" ABSOLUTE)
 
 find_package(LibXml2 REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(OpenMP)
 
 if (OpenCV_FOUND)
 	message(STATUS "Found OpenCV: ${OpenCV_INCLUDE_DIRS} (found version \"${OpenCV_VERSION}\")")
@@ -75,6 +76,11 @@ elseif (LINUX_BITNESS STREQUAL "64-BIT")
 else (LINUX_BITNESS STREQUAL "32-BIT")
 	message(FATAL_ERROR "Invalid linux bitness type specified.")
 endif (LINUX_BITNESS STREQUAL "32-BIT")
+
+if (OPENMP_FOUND)
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif (OPENMP_FOUND)
 
 set(LIBRARY_OUTPUT_PATH ../lib)
 

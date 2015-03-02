@@ -303,20 +303,22 @@ void BackgroundSubtractorIMBS::hsvSuppression() {
 	uchar h_i, s_i, v_i;
 	uchar h_b, s_b, v_b;
 	float h_diff, s_diff, v_ratio;
+	unsigned int p, n;
 	
 	Mat bgrPixel(cv::Size(1, 1), CV_8UC3);
 	
 	vector<Mat> imHSV;
 	cv::split(convertImageRGBtoHSV(frame), imHSV);
 	
-	for(unsigned int p = 0; p < numPixels; ++p) {
+	#pragma omp parallel for private(n)
+	for(p = 0; p < numPixels; ++p) {
 		if(fgmask.data[p]) {
 			
 			h_i = imHSV[0].data[p];
 			s_i = imHSV[1].data[p];
 			v_i = imHSV[2].data[p];
 			
-			for(unsigned int n = 0; n < maxBgBins; ++n) {
+			for(n = 0; n < maxBgBins; ++n) {
 				if(!bgModel[p].isValid[n]) {
 					break;
 				}
@@ -362,15 +364,18 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 	Vec3b currentPixel;
 	//split bgSample in channels
 	cv::split(bgSample, bgSampleBGR);
+	
+	unsigned int p, k, s, n;
+	
 	//create a statistical model for each pixel (a set of bins of variable size)
-	for(unsigned int p = 0; p < numPixels; ++p) {
+	for(p = 0; p < numPixels; ++p) {
 		//create an initial bin for each pixel from the first sample (bg_sample_number = 0)
 		if(bg_sample_number == 0) {
-			for(int k = 0; k < 3; ++k) {
+			for(k = 0; k < 3; ++k) {
 				bgBins[p].binValues[0][k] = bgSampleBGR[k].data[p];
 			}
 			bgBins[p].binHeights[0] = 1;
-			for(unsigned int s = 1; s < numSamples; ++s)	{
+			for(s = 1; s < numSamples; ++s)	{
 				bgBins[p].binHeights[s] = 0;
 			}
 			//if the sample pixel is from foreground keep track of that situation
@@ -382,18 +387,18 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 			}
 		}//if(bg_sample_number == 0)
 		else { //bg_sample_number > 0
-			for(int k = 0; k < 3; ++k) {
+			for(k = 0; k < 3; ++k) {
 				currentPixel[k] = bgSampleBGR[k].data[p];
 			}
 			int den = 0;
-			for(unsigned int s = 0; s < bg_sample_number; ++s) {
+			for(s = 0; s < bg_sample_number; ++s) {
 				//try to associate the current pixel values to an existing bin
 				if( std::abs(currentPixel[2] - bgBins[p].binValues[s][2]) <= (int) associationThreshold &&
 						std::abs(currentPixel[1] - bgBins[p].binValues[s][1]) <= (int) associationThreshold &&
 						std::abs(currentPixel[0] - bgBins[p].binValues[s][0]) <= (int) associationThreshold )
 				{
 					den = (bgBins[p].binHeights[s] + 1);
-					for(int k = 0; k < 3; ++k) {
+					for(k = 0; k < 3; ++k) {
 						bgBins[p].binValues[s][k] =
 								(bgBins[p].binValues[s][k] * bgBins[p].binHeights[s] + currentPixel[k]) / den;
 					}
@@ -423,7 +428,7 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 			if(bg_sample_number == (numSamples - 1)) {
 				unsigned int index = 0;
 				int max_height = -1;
-				for(unsigned int s = 0; s < numSamples; ++s){
+				for(s = 0; s < numSamples; ++s){
 					if(bgBins[p].binHeights[s] == 0) {
 						bgModel[p].isValid[index] = false;
 						break;
@@ -433,7 +438,7 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 					}
 					else if(bgBins[p].binHeights[s] >= minBinHeight) {
 						if(fgmask.data[p] == PERSISTENCE_LABEL) {
-							for(unsigned int n = 0; n < maxBgBins; n++) {
+							for(n = 0; n < maxBgBins; n++) {
 								if(!bgModel[p].isValid[n]) {
 									break;
 								}
@@ -538,12 +543,14 @@ void BackgroundSubtractorIMBS::getFg() {
 	
 	bool isFg = true;
 	bool conditionalUpdated = false;
-	unsigned int d = 0;
-	for(unsigned int p = 0; p < numPixels; ++p) {
+	unsigned int d = 0, p, n;
+	
+	#pragma omp parallel for private(n)
+	for(p = 0; p < numPixels; ++p) {
 		isFg = true;
 		conditionalUpdated = false;
 		d = 0;
-		for(unsigned int n = 0; n < maxBgBins; ++n) {
+		for(n = 0; n < maxBgBins; ++n) {
 			if(!bgModel[p].isValid[n]) {
 				if(n == 0) {
 					isFg = false;
@@ -575,7 +582,7 @@ void BackgroundSubtractorIMBS::getFg() {
 				fgmask.data[p] = PERSISTENCE_LABEL;
 				persistenceMap[p] += (timestamp - prev_timestamp);
 				if(persistenceMap[p] > persistencePeriod) {
-					for(unsigned int n = 0; n < maxBgBins; ++n) {
+					for(n = 0; n < maxBgBins; ++n) {
 						if(!bgModel[p].isValid[n]) {
 							break;
 						}
@@ -594,6 +601,7 @@ void BackgroundSubtractorIMBS::getFg() {
 void BackgroundSubtractorIMBS::areaThresholding()
 {
 	float maxArea = 0.6 * numPixels;
+	int i, j;
 	
 	std::vector < std::vector<Point> > contours;
 	Mat tmpBinaryImage = fgfiltered.clone();
@@ -610,9 +618,11 @@ void BackgroundSubtractorIMBS::areaThresholding()
 		else {
 			drawContours( tmpBinaryImage, contours, contourIdx, Scalar(255), CV_FILLED );
 		}
-	}	
-	for(int i = 0; i < fgfiltered.rows; ++i) {
-		for(int j = 0; j < fgfiltered.cols; ++j) {
+	}
+	
+	#pragma omp parallel for private(j)
+	for(i = 0; i < fgfiltered.rows; ++i) {
+		for(j = 0; j < fgfiltered.cols; ++j) {
 			if(!tmpBinaryImage.at<uchar>(i,j)) {
 				fgfiltered.at<uchar>(i,j) = 0;
 			}
@@ -643,8 +653,11 @@ Mat BackgroundSubtractorIMBS::convertImageRGBtoHSV(const Mat& imageRGB)
 	//char *imRGB = imageRGB->imageData;	// Pointer to the start of the image pixels.
 	//int rowSizeHSV = imageHSV->widthStep;	// Size of row in bytes, including extra padding.
 	//char *imHSV = imageHSV->imageData;	// Pointer to the start of the image pixels.
-	for (int y = 0; y < h; ++y) {
-		for (int x = 0; x < w; ++x) {
+	
+	int x, y;
+	
+	for (y = 0; y < h; ++y) {
+		for (x = 0; x < w; ++x) {
 			// Get the RGB pixel components. NOTE that OpenCV stores RGB pixels in B,G,R order.
 			//uchar *pRGB = (uchar*)(imRGB + y*rowSizeRGB + x*3);
 			int bB = imageRGB.at<Vec3b>(y,x)[0]; //*(uchar*)(pRGB+0);	// Blue component

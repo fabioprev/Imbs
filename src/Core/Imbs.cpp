@@ -310,7 +310,7 @@ void BackgroundSubtractorIMBS::hsvSuppression() {
 	vector<Mat> imHSV;
 	cv::split(convertImageRGBtoHSV(frame), imHSV);
 	
-	#pragma omp parallel for private(n)
+	//#pragma omp parallel for private(n)
 	for(p = 0; p < numPixels; ++p) {
 		if(fgmask.data[p]) {
 			
@@ -545,7 +545,7 @@ void BackgroundSubtractorIMBS::getFg() {
 	bool conditionalUpdated = false;
 	unsigned int d = 0, p, n;
 	
-	#pragma omp parallel for private(n)
+	//#pragma omp parallel for private(n)
 	for(p = 0; p < numPixels; ++p) {
 		isFg = true;
 		conditionalUpdated = false;
@@ -620,7 +620,7 @@ void BackgroundSubtractorIMBS::areaThresholding()
 		}
 	}
 	
-	#pragma omp parallel for private(j)
+	//#pragma omp parallel for private(j)
 	for(i = 0; i < fgfiltered.rows; ++i) {
 		for(j = 0; j < fgfiltered.cols; ++j) {
 			if(!tmpBinaryImage.at<uchar>(i,j)) {

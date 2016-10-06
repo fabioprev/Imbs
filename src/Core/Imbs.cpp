@@ -68,6 +68,8 @@ BackgroundSubtractorIMBS::BackgroundSubtractorIMBS()
 	bgFilename = 0;
 	loadedBg = false;
 	isBackgroundCreated = false;
+	nframes = 0;
+	frameType = 0;
 }
 
 BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(
@@ -116,10 +118,12 @@ BackgroundSubtractorIMBS::BackgroundSubtractorIMBS(
 	
 	bgBins = 0;
 	bgModel = 0;
-	persistenceMap = 0;	
+	persistenceMap = 0;
 	bgFilename = 0;
 	loadedBg = false;
 	isBackgroundCreated = false;
+	nframes = 0;
+	frameType = 0;
 }
 
 BackgroundSubtractorIMBS::~BackgroundSubtractorIMBS()
@@ -211,7 +215,9 @@ void BackgroundSubtractorIMBS::apply(InputArray _frame, OutputArray _fgmask, flo
 	CV_Assert(frame.channels() == 3);
 	
 	bool needToInitialize = nframes == 0 || frame.type() != frameType;
+
 	if( needToInitialize ) {
+
 		initialize(frame.size(), frame.type());
 	}
 	
@@ -235,10 +241,10 @@ void BackgroundSubtractorIMBS::apply(InputArray _frame, OutputArray _fgmask, flo
 	
 	//wait for the first model to be generated
 	if(bgModel[0].isValid[0]) {
-		getFg();    	
+		getFg();
 		hsvSuppression();
 		filterFg();
-	}	
+	}
 	//update the bg model
 	updateBg();
 	
@@ -486,7 +492,6 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 	
 	if(bg_sample_number == (numSamples - 1)) {
 		//std::cout << "new bg created" << std::endl;
-		isBackgroundCreated = true;
 		persistenceImage = Scalar(0);
 		
 		bg_reset = false;
@@ -532,8 +537,9 @@ void BackgroundSubtractorIMBS::createBg(unsigned int bg_sample_number) {
 			}
 			file.close();
 			bgFilename = NULL;
-		}//if bgFilename	
+		}//if bgFilename
 		
+		isBackgroundCreated = true;
 	}
 }
 

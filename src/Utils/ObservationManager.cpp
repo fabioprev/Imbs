@@ -116,7 +116,7 @@ VisualReading ObservationManager::process(const Mat& frame, const Mat& fgMask, i
 	Mat element3(3,3,CV_8U,Scalar(1));
 	
 	morphologyEx(tmpBinaryImage,tmpBinaryImage,MORPH_CLOSE,element3);
-	dilate(tmpBinaryImage,tmpBinaryImage,element3,Point(-1,-1),5);
+	dilate(tmpBinaryImage,tmpBinaryImage,element3,Point(-1,-1),1);
 	findContours(tmpBinaryImage,contours,CV_RETR_LIST,CV_CHAIN_APPROX_NONE);
 	
 	vector<vector<Point> > contoursPoly(contours.size());
@@ -136,7 +136,7 @@ VisualReading ObservationManager::process(const Mat& frame, const Mat& fgMask, i
 			boundRect[contourIdx] = boundingRect(Mat(contoursPoly[contourIdx]));
 			drawContours(tmpBinaryImage,contours,contourIdx,Scalar(255),CV_FILLED);
 			
-			const vector<Rect>& boundingBoxes = filterBoundingBoxVertical(tmpBinaryImage,boundRect[contourIdx],8,0.1);
+			const vector<Rect>& boundingBoxes = filterBoundingBoxVertical(tmpBinaryImage,boundRect[contourIdx],8,0.2);
 			
 			for (vector<Rect>::const_iterator it = boundingBoxes.begin(); it != boundingBoxes.end(); ++it)
 			{

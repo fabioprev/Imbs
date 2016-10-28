@@ -215,44 +215,40 @@ void BackgroundSubtractorIMBS::apply(InputArray _frame, OutputArray _fgmask, flo
 	CV_Assert(frame.channels() == 3);
 	
 	bool needToInitialize = nframes == 0 || frame.type() != frameType;
-
-	if( needToInitialize ) {
-
-		initialize(frame.size(), frame.type());
-	}
+	
+	if( needToInitialize ) initialize(frame.size(),frame.type());
 	
 	_fgmask.create(frameSize, CV_8UC1);
 	fgmask = _fgmask.getMat();
+	
 	fgmask = Scalar(0);
 	
 	//get current time
 	prev_timestamp = timestamp;
-	if(fps == 0.) {
-		timestamp = getTimestamp();//ms
-	}
-	else {
-		timestamp += 1000./fps;//ms
-	}
+	
+	if (fps == 0.) timestamp = getTimestamp();//ms
+	else timestamp += 1000./fps;//ms
 	
 	//check for global changes
-	if(sudden_change) {
-		changeBg();
-	}
+	if (sudden_change) changeBg();
 	
 	//wait for the first model to be generated
-	if(bgModel[0].isValid[0]) {
+	if (bgModel[0].isValid[0])
+	{
 		getFg();
 		hsvSuppression();
 		filterFg();
 	}
-	//update the bg model
+	
 	updateBg();
 	
 	//show an initial message if the first bg is not yet ready
-	if(!bgModel[0].isValid[0]) {
+	if (!bgModel[0].isValid[0])
+	{
 		initialMsgGray.copyTo(fgmask);
 		initialMsgRGB.copyTo(bgImage);
 	}
+	
 	++nframes;
 }
 
